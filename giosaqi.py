@@ -71,7 +71,7 @@ async def async_setup_platform(hass, config, async_add_entities,
                     dev.append(gios_sensor)
     except (aiohttp.client_exceptions.ClientConnectorError,
             asyncio.TimeoutError):
-        _LOGGER.exception('Failed to connect to GIOS servers.')
+        _LOGGER.debug('Failed to connect to GIOS servers.')
         raise PlatformNotReady
     async_add_entities(dev, True)
 
@@ -128,7 +128,7 @@ class GiosSensor(Entity):
                 self._data = None
         except (aiohttp.client_exceptions.ClientConnectorError,
             asyncio.TimeoutError):
-            _LOGGER.exception('Failed to connect to GIOS servers.')
+            _LOGGER.debug('Failed to connect to GIOS servers.')
             self._data = None
         _LOGGER.debug("Sensor data: %s", self._data)
         
