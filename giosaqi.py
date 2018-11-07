@@ -71,7 +71,7 @@ async def async_setup_platform(hass, config, async_add_entities,
                     dev.append(gios_sensor)
     except (aiohttp.client_exceptions.ClientConnectorError,
             asyncio.TimeoutError):
-        _LOGGER.exception('Failed to connect to WAQI servers.')
+        _LOGGER.exception('Failed to connect to GIOS servers.')
         raise PlatformNotReady
     async_add_entities(dev, True)
 
@@ -105,38 +105,30 @@ class GiosSensor(Entity):
     def state(self):
         """Return the state of the device."""
         if self._data is not None:
+            _LOGGER.debug("GIOS:Data %s", self._data)
             return round(self._data['value'],1)
-        return None
+        else:
+            return None
 
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement of this entity, if any."""
         return 'µg/m3'
 
-    # @property
-    # def device_state_attributes(self):
-    #     """Return the state attributes of the last update."""
-    #     attrs = {}
-
-    #     if self._data is not None:
-    #         try:
-    #             attrs[ATTR_ATTRIBUTION] = ' and '.join(
-    #                 [ATTRIBUTION] + [
-    #                     v['name'] for v in self._data.get('attributions', [])])
-
-    #             attrs[ATTR_LAST_UPDATE] = self._data.get('date')
-
-    #             sensors = self._data
-    #             for sensor in sensors:
-    #                 if sensor['name'] in KEY_TO_ATTR:
-    #                     attrs[KEY_TO_ATTR[sensor['name']]] = sensor['value']
-    #                 else:
-    #                     attrs[sensor['name']] = sensor['value']
-    #             return attrs
-    #         except (IndexError, KeyError):
-    #             return {ATTR_ATTRIBUTION: ATTRIBUTION}
-
     async def async_update(self):
         """Get the latest data and updates the states."""
-        rest_sensor_data = await self._client.get_sensor_data(self.uid)
-        self._data = rest_sensor_data['values'][0]
+        try:
+            rest_sensor_data = await self._client.get_sensor_data(self.uid)
+            if rest_sensor_data is not None:
+                for data in rest_sensor_data['values']:
+                    if data['value'] is not None:
+                        self._data = data
+                        break
+            else:
+                self._data = None
+        except (aiohttp.client_exceptions.ClientConnectorError,
+            asyncio.TimeoutError):
+            _LOGGER.exception('Failed to connect to GIOS servers.')
+            self._data = None
+        _LOGGER.debug("Sensor data: %s", self._data)
+        
